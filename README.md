@@ -1,7 +1,5 @@
 # PARCIAL
 Tienda online
-# 🛒 Tienda Online en Python (Consola)
- 
 Este es el desarrollo del parcial # 1 de la clase Programacion del profe Alejandro Salgar en lenguaje Python que simula una tienda online con productos **Electrodomésticos**, **Ropa** y **Alimentos**, donde el usuario puede:
  
 - Ver catálogo
@@ -21,7 +19,7 @@ Además, el código está separado en diferentes archivos `.py` para mantener bu
  
 ---
  
-## 🚀 Instrucciones de instalación y ejecución
+## Instrucciones de instalación y ejecución
  
 ### 1. Clonar el repositorio
 Abra una terminal (CMD, PowerShell o Git Bash) y ejecute:
