@@ -1,12 +1,12 @@
 from typing import Final
-from product import Product
+from .product import Product
 
 
 class Appliance(Product):
     """Electrodomésticos"""
 
-    def __init__(self, pid: int, name: str, price: float, stock: int, warranty_months: int) -> None:
-        super().__init__(pid, name, price, stock)
+    def __init__(self, id: int, name: str, price: float, stock: int, warranty_months: int) -> None:
+        super().__init__(id, name, price, stock)
         self._warranty_months: Final[int] = warranty_months
 
     @property

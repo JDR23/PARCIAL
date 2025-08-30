@@ -1,5 +1,5 @@
 from datetime import date
-from product import Product
+from .product import Product
 
 
 class Food(Product):

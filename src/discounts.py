@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Dict, Iterable, Tuple
-from product import Product
+from .product import Product
 
 
 class DiscountStrategy(ABC):

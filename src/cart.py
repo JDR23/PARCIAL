@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Tuple, List
-from product import Product
-from discounts import DiscountStrategy
+from .product import Product
+from .discounts import DiscountStrategy
 
 
 class Cart:
