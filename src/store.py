@@ -1,9 +1,9 @@
 from datetime import date, timedelta
 from typing import Dict
-from .appliance import Appliance
-from .clothing import Clothing
-from .food import Food
-from .product import Product
+from appliance import Appliance
+from clothing import Clothing
+from food import Food
+from product import Product
 
 
 def load_inventory() -> Dict[int, Product]:
