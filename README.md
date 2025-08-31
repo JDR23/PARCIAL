@@ -26,7 +26,7 @@ Abra una terminal (CMD, PowerShell o Git Bash) y ejecute:
  
 ```bash
  
-git clone https://github.com/JDR23/PARCIAL-1.git
+git clone https://github.com/JDR23/PARCIAL.git 
  
 ```
 ```bash
