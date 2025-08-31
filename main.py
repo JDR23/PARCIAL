@@ -110,7 +110,7 @@ def handle_checkout(cart: Cart) -> None:
         return
     confirm = input("¿Confirmar pago? (s/n): ").strip().lower()
     if confirm == "s":
-        print("✅ Pago realizado. ¡Gracias por su compra!")
+        print(" Pago realizado. ¡Gracias por su compra!")
         cart.clear()
     else:
         print("Operación cancelada.")
