@@ -1,23 +1,37 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
-from datetime import date, datetime
-
+import uuid
+from pydantic import BaseModel
+from datetime import datetime
 
 # =======================
 # Usuario
 # =======================
 class UsuarioBase(BaseModel):
-    nombre: str
-    email: EmailStr
+    primer_nombre_usuario: str
+    segundo_nombre_usuario: str | None = None
+    primer_apellido_usuario: str
+    segundo_apellido_usuario: str | None = None
+    rol_usuario: str
+    fecha_nacimiento_usuario: datetime
 
 class UsuarioCreate(UsuarioBase):
-    password: str
+    pass
+
+class UsuarioUpdate(BaseModel):
+    primer_nombre_usuario: str | None = None
+    segundo_nombre_usuario: str | None = None
+    primer_apellido_usuario: str | None = None
+    segundo_apellido_usuario: str | None = None
+    rol_usuario: str | None = None
+    fecha_nacimiento_usuario: datetime | None = None
 
 class UsuarioResponse(UsuarioBase):
-    id: int
+    id_usuario: uuid.UUID
 
     class Config:
         orm_mode = True
+
+class UsuarioList(UsuarioResponse):
+    pass
 
 
 # =======================
