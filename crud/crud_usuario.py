@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
-from entidades.usuario import Usuario
+from entities.usuario import Usuario
 from schemas import UsuarioCreate, UsuarioUpdate
 import uuid
+from crud import crud_usuario
+
 
 # Crear usuario
 def create_usuario(db: Session, usuario: UsuarioCreate):
