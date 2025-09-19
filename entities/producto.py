@@ -3,6 +3,9 @@ from sqlalchemy.sql import func
 from database import Base
 from pydantic import BaseModel
 from datetime import datetime
+from sqlalchemy.orm import relationship
+from typing import Optional
+import uuid
 
 class Producto(Base):
     __tablename__ = "productos"
@@ -47,3 +50,14 @@ class ProductoResponse(ProductoBase):
 
 class ProductoList(ProductoResponse):
     pass
+
+
+class ProductoSchema(BaseModel):
+    id: uuid.UUID | None = None
+    nombre: str
+    precio: float
+    stock: int
+    creado_en: datetime | None = None
+
+    class Config:
+        from_attributes = True
