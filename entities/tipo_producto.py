@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from database import Base
 from pydantic import BaseModel
+import uuid
 
 class TipoProducto(Base):
     __tablename__ = "tipos_producto"
@@ -33,3 +34,12 @@ class TipoProductoResponse(TipoProductoBase):
 
 class TipoProductoList(TipoProductoResponse):
     pass
+
+
+class TipoProductoSchema(BaseModel):
+    id: uuid.UUID | None = None
+    nombre: str
+    descripcion: str | None = None
+
+    class Config:
+        from_attributes = True
