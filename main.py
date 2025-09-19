@@ -3,6 +3,17 @@ from src.product import Product
 from src.store import load_inventory
 from src.cart import Cart
 from src.discounts import PercentageCoupon, CategoryDiscount
+from fastapi import FastAPI
+from routers import usuario_router
+
+app = FastAPI()
+
+# Registrar routers
+app.include_router(usuario_router.router)
+
+@app.get("/")
+def root():
+    return {"message": "API funcionando 🚀"}
 
 
 def print_header() -> None:
