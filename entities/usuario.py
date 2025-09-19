@@ -1,19 +1,39 @@
 import uuid
 from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from database import BaseModel
+from database import Base  # Este es tu SQLAlchemy Base (de database.py)
+from pydantic import BaseModel  # Este es de Pydantic, para validaciones
 from datetime import datetime
 
-class Usuario(BaseModel):
-    """
-    Modelo de usuarios que representa la tabla 'usuarios'
-    """
+
+class UsuarioSchema(BaseModel):
+    id: uuid.UUID | None = None
+    nombre: str
+    correo: str
+    creado_en: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+# Modelo de SQLAlchemy (tabla en la BD)
+class Usuario(Base):
     __tablename__ = "usuarios"
 
-    id_usuario = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    primer_nombre_usuario = Column(String, nullable=False)
-    segundo_nombre_usuario = Column(String, nullable=True)
-    primer_apellido_usuario = Column(String, nullable=False)
-    segundo_apellido_usuario = Column(String, nullable=True)
-    rol_usuario = Column(String, nullable=False)
-    fecha_nacimiento_usuario = Column(DateTime, nullable=False, default=datetime.utcnow)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    nombre = Column(String, nullable=False)
+    correo = Column(String, unique=True, index=True, nullable=False)
+    creado_en = Column(DateTime, default=datetime.utcnow)
+
+
+class UsuarioSchema(BaseModel):
+    id: uuid.UUID | None = None
+    nombre: str
+    correo: str
+    creado_en: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+
