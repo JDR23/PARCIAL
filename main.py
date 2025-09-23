@@ -12,8 +12,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Incluir routers
-app.include_router(usuario_router.router, prefix="/usuarios", tags=["Usuarios"])
+# Incluir routers (ya tienen prefix y tags definidos en usuario_router.py)
+app.include_router(usuario_router.router)
 
 
 # Ruta raíz
