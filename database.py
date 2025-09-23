@@ -1,20 +1,25 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-# 👇 Tu cadena de conexión adaptada para SQLAlchemy
-DATABASE_URL = "postgresql://neondb_owner:npg_nDTfmNS5cxJ9@ep-blue-star-adunfkf2-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+# Cambia la URL a tu BD (ej: PostgreSQL, SQLite, etc.)
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+# Para PostgreSQL sería algo así:
+# SQLALCHEMY_DATABASE_URL = "postgresql://usuario:password@localhost:5432/tu_basedatos"
 
-# Crear el engine
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args=(
+        {"check_same_thread": False} if "sqlite" in SQLALCHEMY_DATABASE_URL else {}
+    ),
+)
 
-# Crear la sesión
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base para heredar en tus entidades
 Base = declarative_base()
 
 
-# Dependencia para obtener sesión en el código
+# Dependency
 def get_db():
     db = SessionLocal()
     try:
