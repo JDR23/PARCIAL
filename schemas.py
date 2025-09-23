@@ -1,8 +1,7 @@
 import uuid
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
-from datetime import date
 
 
 # =======================
@@ -10,33 +9,24 @@ from datetime import date
 # =======================
 class UsuarioBase(BaseModel):
     primer_nombre_usuario: str
-    segundo_nombre_usuario: str | None = None
+    segundo_nombre_usuario: Optional[str] = None
     primer_apellido_usuario: str
-    segundo_apellido_usuario: str | None = None
+    segundo_apellido_usuario: Optional[str] = None
     rol_usuario: str
     fecha_nacimiento_usuario: datetime
-
-    class Config:
-        from_attributes = True  # Necesario en Pydantic v2
 
 
 class UsuarioCreate(UsuarioBase):
     pass
 
-    class Config:
-        from_attributes = True
-
 
 class UsuarioUpdate(BaseModel):
-    primer_nombre_usuario: str | None = None
-    segundo_nombre_usuario: str | None = None
-    primer_apellido_usuario: str | None = None
-    segundo_apellido_usuario: str | None = None
-    rol_usuario: str | None = None
-    fecha_nacimiento_usuario: datetime | None = None
-
-    class Config:
-        from_attributes = True
+    primer_nombre_usuario: Optional[str] = None
+    segundo_nombre_usuario: Optional[str] = None
+    primer_apellido_usuario: Optional[str] = None
+    segundo_apellido_usuario: Optional[str] = None
+    rol_usuario: Optional[str] = None
+    fecha_nacimiento_usuario: Optional[datetime] = None
 
 
 class UsuarioResponse(UsuarioBase):
