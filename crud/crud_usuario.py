@@ -2,24 +2,34 @@ from sqlalchemy.orm import Session
 from entities.usuario import Usuario
 from schemas import UsuarioCreate, UsuarioUpdate
 import uuid
-from crud import crud_usuario
 
 
 # Crear usuario
 def create_usuario(db: Session, usuario: UsuarioCreate):
-    db_usuario = Usuario(**usuario.dict())
+    db_usuario = Usuario(
+        id_usuario=uuid.uuid4(),
+        primer_nombre_usuario=usuario.primer_nombre_usuario,
+        segundo_nombre_usuario=usuario.segundo_nombre_usuario,
+        primer_apellido_usuario=usuario.primer_apellido_usuario,
+        segundo_apellido_usuario=usuario.segundo_apellido_usuario,
+        rol_usuario=usuario.rol_usuario,
+        fecha_nacimiento_usuario=usuario.fecha_nacimiento_usuario,
+    )
     db.add(db_usuario)
     db.commit()
     db.refresh(db_usuario)
     return db_usuario
 
+
 # Obtener todos los usuarios
 def get_usuarios(db: Session, skip: int = 0, limit: int = 10):
     return db.query(Usuario).offset(skip).limit(limit).all()
 
+
 # Obtener un usuario por ID
 def get_usuario_by_id(db: Session, usuario_id: uuid.UUID):
     return db.query(Usuario).filter(Usuario.id_usuario == usuario_id).first()
+
 
 # Actualizar usuario
 def update_usuario(db: Session, usuario_id: uuid.UUID, usuario: UsuarioUpdate):
@@ -33,6 +43,7 @@ def update_usuario(db: Session, usuario_id: uuid.UUID, usuario: UsuarioUpdate):
     db.commit()
     db.refresh(db_usuario)
     return db_usuario
+
 
 # Eliminar usuario
 def delete_usuario(db: Session, usuario_id: uuid.UUID):
