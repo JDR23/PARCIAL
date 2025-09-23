@@ -16,8 +16,16 @@ class UsuarioBase(BaseModel):
     rol_usuario: str
     fecha_nacimiento_usuario: datetime
 
+    class Config:
+        from_attributes = True  # Necesario en Pydantic v2
+
+
 class UsuarioCreate(UsuarioBase):
     pass
+
+    class Config:
+        from_attributes = True
+
 
 class UsuarioUpdate(BaseModel):
     primer_nombre_usuario: str | None = None
@@ -27,11 +35,16 @@ class UsuarioUpdate(BaseModel):
     rol_usuario: str | None = None
     fecha_nacimiento_usuario: datetime | None = None
 
+    class Config:
+        from_attributes = True
+
+
 class UsuarioResponse(UsuarioBase):
     id_usuario: uuid.UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
 
 class UsuarioList(UsuarioResponse):
     pass
@@ -45,14 +58,16 @@ class ClienteBase(BaseModel):
     direccion: str
     telefono: str
 
+
 class ClienteCreate(ClienteBase):
     pass
+
 
 class ClienteResponse(ClienteBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =======================
@@ -61,14 +76,16 @@ class ClienteResponse(ClienteBase):
 class TipoProductoBase(BaseModel):
     nombre: str
 
+
 class TipoProductoCreate(TipoProductoBase):
     pass
+
 
 class TipoProductoResponse(TipoProductoBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =======================
@@ -80,11 +97,13 @@ class ProductoBase(BaseModel):
     stock: int
     categoria_id: int  # referencia a tipo_producto
 
+
 class ProductoCreate(ProductoBase):
     warranty_months: Optional[int] = None
     size: Optional[str] = None
     gender: Optional[str] = None
     expiration_date: Optional[date] = None
+
 
 class ProductoResponse(ProductoBase):
     id: int
@@ -94,7 +113,7 @@ class ProductoResponse(ProductoBase):
     expiration_date: Optional[date]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =======================
@@ -105,14 +124,16 @@ class CarritoBase(BaseModel):
     producto_id: int
     cantidad: int
 
+
 class CarritoCreate(CarritoBase):
     pass
+
 
 class CarritoResponse(CarritoBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =======================
@@ -122,12 +143,14 @@ class FacturaBase(BaseModel):
     cliente_id: int
     fecha: datetime
 
+
 class FacturaCreate(FacturaBase):
     pass
+
 
 class FacturaResponse(FacturaBase):
     id: int
     total: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True
