@@ -1,22 +1,12 @@
 from fastapi import FastAPI
-from database import Base, engine
+from database import engine, Base
 from routers import usuario_router
 
-# Crear las tablas en la base de datos
+# Crear las tablas en la BD si no existen
 Base.metadata.create_all(bind=engine)
 
-# Inicializar la aplicación FastAPI
-app = FastAPI(
-    title="Parcial 1 - API",
-    description="Aplicativo de ejemplo con FastAPI, SQLAlchemy y Pydantic",
-    version="1.0.0",
-)
+# Inicializar la app
+app = FastAPI(title="Parcial - Gestión de Usuarios")
 
-# Incluir routers (ya tienen prefix y tags definidos en usuario_router.py)
-app.include_router(usuario_router.router)
-
-
-# Ruta raíz
-@app.get("/")
-def root():
-    return {"mensaje": "Aplicativo corriendo correctamente"}
+# Registrar routers
+app.include_router(usuario_router.router, prefix="/usuarios", tags=["Usuarios"])
