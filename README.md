@@ -110,4 +110,4 @@ Aplicar migraciones:
 alembic upgrade head
 
 
-Esto permite mantener sincronizado el esquema de la base de datos tanto en SQLite local como en Neon PostgreSQL remoto.
+Esto permite mantener sincronizado el esquema de la base de datos tanto en SQLite local como en Neon PostgreSQL remoto
