@@ -26,7 +26,7 @@ def crear_usuario(db):
     db.add(usuario)
     db.commit()
     db.refresh(usuario)
-    print(f"✅ Usuario creado con ID: {usuario.id}")
+    print(f" Usuario creado con ID: {usuario.id}")
 
 
 def listar_usuarios(db):
@@ -45,7 +45,7 @@ def actualizar_usuario(db):
     usuario_id = input("\nIngrese el ID del usuario a actualizar: ")
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not usuario:
-        print("❌ Usuario no encontrado")
+        print(" Usuario no encontrado")
         return
 
     nuevo_nombre = (
@@ -63,7 +63,7 @@ def actualizar_usuario(db):
     usuario.rol_usuario = nuevo_rol
 
     db.commit()
-    print("✅ Usuario actualizado con éxito")
+    print(" Usuario actualizado con éxito")
 
 
 def eliminar_usuario(db):
@@ -71,7 +71,7 @@ def eliminar_usuario(db):
     usuario_id = input("\nIngrese el ID del usuario a eliminar: ")
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not usuario:
-        print("❌ Usuario no encontrado")
+        print(" Usuario no encontrado")
         return
 
     db.delete(usuario)
@@ -103,7 +103,7 @@ def menu():
             print("👋 Saliendo...")
             break
         else:
-            print("❌ Opción inválida")
+            print(" Opción inválida")
 
 
 if __name__ == "__main__":
