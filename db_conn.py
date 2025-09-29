@@ -12,9 +12,8 @@ try:
     cur = conn.cursor()
     cur.execute("SELECT version();")
     record = cur.fetchone()
-    print("✅ Conectado a:", record)
+    print(" Conectado a:", record)
     cur.close()
     conn.close()
 except Exception as e:
-    print("❌ Error de conexión:", e)
-
+    print(" Error de conexión:", e)

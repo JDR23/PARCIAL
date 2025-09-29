@@ -8,7 +8,6 @@ from datetime import datetime
 class Usuario(Base):
     __tablename__ = "usuarios"
 
-    # Usamos TEXT para el UUID en SQLite
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
 
     primer_nombre_usuario = Column(String, nullable=False)
