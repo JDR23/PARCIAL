@@ -1,19 +1,24 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
 from sqlalchemy.sql import func
 from database import Base
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class Carrito(Base):
     __tablename__ = "carritos"
 
-    id_carrito = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_producto = Column(Integer, ForeignKey("productos.id_producto"), nullable=False)
-    id_cliente = Column(Integer, ForeignKey("clientes.id_cliente"), nullable=False)
+    id_carrito = Column(Integer, primary_key=True,
+                        autoincrement=True, index=True)
+    id_producto = Column(Integer, ForeignKey(
+        "productos.id_producto"), nullable=False)
+    # clientes.id_cliente is stored as a string (UUID-like) in this project, use String here
+    id_cliente = Column(String, ForeignKey(
+        "clientes.id_cliente"), nullable=False)
     id_cliente_creacion = Column(String, nullable=True)
-    id_cliente_edicion = Column(Integer, nullable=True)
+    # id_cliente_edicion stores the id of the editing client (string)
+    id_cliente_edicion = Column(String, nullable=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-
 
 
 class CarritoBase(BaseModel):
