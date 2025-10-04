@@ -53,6 +53,12 @@ class ClienteCreate(ClienteBase):
     pass
 
 
+class ClienteUpdate(BaseModel):
+    nombre: Optional[str] = None
+    direccion: Optional[str] = None
+    telefono: Optional[str] = None
+
+
 class ClienteResponse(ClienteBase):
     id: int
 
@@ -64,18 +70,24 @@ class ClienteResponse(ClienteBase):
 # Tipo de Producto
 # =======================
 class TipoProductoBase(BaseModel):
-    nombre: str
+    nombre_categoria: str
+    descripcion: Optional[str] = None
 
 
 class TipoProductoCreate(TipoProductoBase):
     pass
 
 
+class TipoProductoUpdate(BaseModel):
+    nombre_categoria: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
 class TipoProductoResponse(TipoProductoBase):
-    id: int
+    id_tipo_producto: int
 
     class Config:
-        from_attributes = True
+        from_attributes = True  # Cambiado de orm_mode a from_attributes
 
 
 # =======================
@@ -89,6 +101,17 @@ class ProductoBase(BaseModel):
 
 
 class ProductoCreate(ProductoBase):
+    warranty_months: Optional[int] = None
+    size: Optional[str] = None
+    gender: Optional[str] = None
+    expiration_date: Optional[date] = None
+
+
+class ProductoUpdate(BaseModel):
+    nombre: Optional[str] = None
+    precio: Optional[float] = None
+    stock: Optional[int] = None
+    categoria_id: Optional[int] = None
     warranty_months: Optional[int] = None
     size: Optional[str] = None
     gender: Optional[str] = None
