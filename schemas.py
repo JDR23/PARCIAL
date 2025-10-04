@@ -29,14 +29,14 @@ class UsuarioUpdate(BaseModel):
     fecha_nacimiento_usuario: Optional[datetime] = None
 
 
-class UsuarioResponse(UsuarioBase):
+class UsuarioSchema(UsuarioBase):
     id_usuario: uuid.UUID
 
     class Config:
         from_attributes = True
 
 
-class UsuarioList(UsuarioResponse):
+class UsuarioList(UsuarioSchema):
     pass
 
 
