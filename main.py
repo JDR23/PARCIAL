@@ -1,110 +1,87 @@
-from database import Base, engine, SessionLocal
-from models import Usuario
-from datetime import datetime
+"""
+Sistema de gestión de productos con ORM SQLAlchemy y Neon PostgreSQL
+API REST con FastAPI - Sin interfaz de consola
+"""
+import uvicorn
+from routers import (auth, carrito, cliente, factura, producto,
+                     tipo_producto, usuario)
+from database.config import create_tables
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-# Crear las tablas en la BD si no existen
-Base.metadata.create_all(bind=engine)
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
+
+# Crear la aplicación FastAPI
+app = FastAPI(
+    title="Sistema de Gestión de Productos",
+    description="API REST para gestión de usuarios, categorías y productos con autenticación",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+# Configurar CORS para permitir peticiones desde el frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, especificar dominios específicos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Incluir los routers de las APIs
+app.include_router(auth.router)
+app.include_router(usuario.router)
+app.include_router(carrito.router)
+app.include_router(cliente.router)
+app.include_router(factura.router)
+app.include_router(producto.router)
+app.include_router(tipo_producto.router)
 
 
-def crear_usuario(db):
-    print("\n--- Crear Usuario ---")
-    primer_nombre = input("Primer nombre: ")
-    segundo_nombre = input("Segundo nombre (opcional): ")
-    primer_apellido = input("Primer apellido: ")
-    segundo_apellido = input("Segundo apellido (opcional): ")
-    rol = input("Rol: ")
-    fecha_nacimiento = input("Fecha de nacimiento (YYYY-MM-DD): ")
+@app.on_event("startup")
+async def startup_event():
+    """Evento de inicio de la aplicación"""
+    print("Iniciando Sistema de Gestión de Tienda Online...")
+    print("Configurando base de datos...")
+    create_tables()
+    print("Sistema listo para usar.")
+    print("Documentación disponible en: http://localhost:8000/docs")
 
-    usuario = Usuario(
-        primer_nombre_usuario=primer_nombre,
-        segundo_nombre_usuario=segundo_nombre or None,
-        primer_apellido_usuario=primer_apellido,
-        segundo_apellido_usuario=segundo_apellido or None,
-        rol_usuario=rol,
-        fecha_nacimiento_usuario=datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date(),
+
+@app.get("/", tags=["raíz"])
+async def root():
+    """Endpoint raíz que devuelve información básica de la API."""
+    return {
+        "mensaje": "Bienvenido al Sistema de Gestión de Productos",
+        "version": "1.0.0",
+        "documentacion": "/docs",
+        "redoc": "/redoc",
+        "endpoints": {
+            "autenticacion": "/auth",
+            "usuarios": "/usuarios",
+            "tipos_producto": "/tipos_producto",
+            "productos": "/productos",
+            "clientes": "/clientes",
+            "carrito": "/carrito",
+            "facturas": "/facturas",
+        },
+    }
+
+
+def main():
+    """Función principal para ejecutar el servidor"""
+    print("Iniciando servidor FastAPI...")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,  # Recargar automáticamente en desarrollo
+        log_level="info",
     )
-    db.add(usuario)
-    db.commit()
-    db.refresh(usuario)
-    print(f" Usuario creado con ID: {usuario.id}")
-
-
-def listar_usuarios(db):
-    print("\n--- Lista de Usuarios ---")
-    usuarios = db.query(Usuario).all()
-    if not usuarios:
-        print("No hay usuarios registrados.")
-    for u in usuarios:
-        print(
-            f"{u.id} | {u.primer_nombre_usuario} {u.primer_apellido_usuario} - {u.rol_usuario}"
-        )
-
-
-def actualizar_usuario(db):
-    listar_usuarios(db)
-    usuario_id = input("\nIngrese el ID del usuario a actualizar: ")
-    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if not usuario:
-        print(" Usuario no encontrado")
-        return
-
-    nuevo_nombre = (
-        input(f"Nuevo primer nombre ({usuario.primer_nombre_usuario}): ")
-        or usuario.primer_nombre_usuario
-    )
-    nuevo_apellido = (
-        input(f"Nuevo primer apellido ({usuario.primer_apellido_usuario}): ")
-        or usuario.primer_apellido_usuario
-    )
-    nuevo_rol = input(f"Nuevo rol ({usuario.rol_usuario}): ") or usuario.rol_usuario
-
-    usuario.primer_nombre_usuario = nuevo_nombre
-    usuario.primer_apellido_usuario = nuevo_apellido
-    usuario.rol_usuario = nuevo_rol
-
-    db.commit()
-    print(" Usuario actualizado con éxito")
-
-
-def eliminar_usuario(db):
-    listar_usuarios(db)
-    usuario_id = input("\nIngrese el ID del usuario a eliminar: ")
-    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if not usuario:
-        print(" Usuario no encontrado")
-        return
-
-    db.delete(usuario)
-    db.commit()
-    print("✅ Usuario eliminado con éxito")
-
-
-def menu():
-    db = SessionLocal()
-    while True:
-        print("\n=== MENÚ GESTIÓN DE USUARIOS ===")
-        print("1. Crear usuario")
-        print("2. Listar usuarios")
-        print("3. Actualizar usuario")
-        print("4. Eliminar usuario")
-        print("5. Salir")
-
-        opcion = input("Seleccione una opción: ")
-        if opcion == "1":
-            crear_usuario(db)
-        elif opcion == "2":
-            listar_usuarios(db)
-        elif opcion == "3":
-            actualizar_usuario(db)
-        elif opcion == "4":
-            eliminar_usuario(db)
-        elif opcion == "5":
-            db.close()
-            print("👋 Saliendo...")
-            break
-        else:
-            print(" Opción inválida")
 
 
 if __name__ == "__main__":
-    menu()
+    main()
