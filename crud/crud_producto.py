@@ -1,147 +1,45 @@
-"""
-Operaciones CRUD para Producto
-"""
-
-from typing import List, Optional
-
-from entities.producto import Producto
-from schemas import ProductoCreate, ProductoUpdate
 from sqlalchemy.orm import Session
+from models.producto import Producto
+import uuid
 
 
-class ProductoCRUD:
-    def __init__(self, db: Session):
-        self.db = db
+def get_productos(db: Session):
+    return db.query(Producto).all()
 
-    def crear_producto(self, producto_data: ProductoCreate) -> Producto:
-        """
-        Crea un nuevo producto.
 
-        Args:
-            producto_data: Datos del producto a crear.
+def get_producto(db: Session, producto_id: str):
+    return db.query(Producto).filter(Producto.id == producto_id).first()
 
-        Returns:
-            El objeto Producto creado.
 
-        Raises:
-            ValueError: Si los datos de entrada no son válidos.
-        """
-        if producto_data.precio <= 0:
-            raise ValueError("El precio debe ser un número positivo.")
-        if producto_data.stock < 0:
-            raise ValueError("El stock no puede ser negativo.")
+def create_producto(db: Session, producto_data):
+    nuevo_producto = Producto(
+        id=str(uuid.uuid4()),
+        nombre=producto_data.nombre,
+        descripcion=producto_data.descripcion,
+        precio=producto_data.precio,
+        tipo_id=producto_data.tipo_id,
+    )
+    db.add(nuevo_producto)
+    db.commit()
+    db.refresh(nuevo_producto)
+    return nuevo_producto
 
-        # Aquí podrías añadir una validación para asegurar que `categoria_id` existe.
 
-        nuevo_producto = Producto(**producto_data.model_dump())
-        self.db.add(nuevo_producto)
-        self.db.commit()
-        self.db.refresh(nuevo_producto)
-        return nuevo_producto
+def update_producto(db: Session, producto_id: str, producto_data):
+    producto = get_producto(db, producto_id)
+    if not producto:
+        return None
+    for key, value in producto_data.dict(exclude_unset=True).items():
+        setattr(producto, key, value)
+    db.commit()
+    db.refresh(producto)
+    return producto
 
-    def obtener_producto(self, producto_id: int) -> Optional[Producto]:
-        """
-        Obtiene un producto por su ID.
 
-        Args:
-            producto_id: ID del producto.
-
-        Returns:
-            El objeto Producto o None si no se encuentra.
-        """
-        return self.db.query(Producto).filter(Producto.id == producto_id).first()
-
-    def obtener_productos(self, skip: int = 0, limit: int = 100) -> List[Producto]:
-        """
-        Obtiene una lista de productos con paginación.
-
-        Args:
-            skip: Número de registros a saltar.
-            limit: Número máximo de registros a devolver.
-
-        Returns:
-            Lista de objetos Producto.
-        """
-        return self.db.query(Producto).offset(skip).limit(limit).all()
-
-    def buscar_productos_por_nombre(self, nombre: str) -> List[Producto]:
-        """
-        Busca productos cuyo nombre contenga el texto proporcionado.
-
-        Args:
-            nombre: Texto a buscar en el nombre del producto.
-
-        Returns:
-            Lista de productos que coinciden con la búsqueda.
-        """
-        return self.db.query(Producto).filter(Producto.nombre.ilike(f"%{nombre}%")).all()
-
-    def actualizar_producto(
-        self, producto_id: int, producto_data: ProductoUpdate
-    ) -> Optional[Producto]:
-        """
-        Actualiza un producto existente.
-
-        Args:
-            producto_id: ID del producto a actualizar.
-            producto_data: Datos para actualizar.
-
-        Returns:
-            El objeto Producto actualizado o None si no se encuentra.
-        """
-        producto_db = self.obtener_producto(producto_id)
-        if not producto_db:
-            return None
-
-        update_data = producto_data.model_dump(exclude_unset=True)
-
-        if "precio" in update_data and update_data["precio"] <= 0:
-            raise ValueError("El precio debe ser un número positivo.")
-        if "stock" in update_data and update_data["stock"] < 0:
-            raise ValueError("El stock no puede ser negativo.")
-
-        for field, value in update_data.items():
-            setattr(producto_db, field, value)
-
-        self.db.commit()
-        self.db.refresh(producto_db)
-        return producto_db
-
-    def actualizar_stock(self, producto_id: int, nuevo_stock: int) -> Optional[Producto]:
-        """
-        Actualiza únicamente el stock de un producto.
-
-        Args:
-            producto_id: ID del producto.
-            nuevo_stock: Nueva cantidad de stock.
-
-        Returns:
-            El objeto Producto actualizado o None si no se encuentra.
-        """
-        producto_db = self.obtener_producto(producto_id)
-        if not producto_db:
-            return None
-        if nuevo_stock < 0:
-            raise ValueError("El stock no puede ser negativo.")
-
-        producto_db.stock = nuevo_stock
-        self.db.commit()
-        self.db.refresh(producto_db)
-        return producto_db
-
-    def eliminar_producto(self, producto_id: int) -> bool:
-        """
-        Elimina un producto de la base de datos.
-
-        Args:
-            producto_id: ID del producto a eliminar.
-
-        Returns:
-            True si se eliminó correctamente, False en caso contrario.
-        """
-        producto_db = self.obtener_producto(producto_id)
-        if producto_db:
-            self.db.delete(producto_db)
-            self.db.commit()
-            return True
-        return False
+def delete_producto(db: Session, producto_id: str):
+    producto = get_producto(db, producto_id)
+    if not producto:
+        return None
+    db.delete(producto)
+    db.commit()
+    return producto

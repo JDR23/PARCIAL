@@ -1,54 +1,33 @@
 from sqlalchemy.orm import Session
-from models.usuario import Usuario
-from datetime import date
-import uuid
+from entities.cliente import Cliente
+from schemas import ClienteCreate, ClienteUpdate
 
 
-def crear_usuario(
-    db: Session,
-    primer_nombre: str,
-    primer_apellido: str,
-    rol: str,
-    fecha_nacimiento: date,
-    segundo_nombre: str = None,
-    segundo_apellido: str = None,
-):
-    nuevo_usuario = Usuario(
-        primer_nombre_usuario=primer_nombre,
-        segundo_nombre_usuario=segundo_nombre,
-        primer_apellido_usuario=primer_apellido,
-        segundo_apellido_usuario=segundo_apellido,
-        rol_usuario=rol,
-        fecha_nacimiento_usuario=fecha_nacimiento,
-    )
-    db.add(nuevo_usuario)
+def crear_cliente(db: Session, cliente: ClienteCreate):
+    nuevo_cliente = Cliente(**cliente.model_dump())
+    db.add(nuevo_cliente)
     db.commit()
-    db.refresh(nuevo_usuario)
-    return nuevo_usuario
+    db.refresh(nuevo_cliente)
+    return nuevo_cliente
 
 
-def obtener_usuarios(db: Session):
-    return db.query(Usuario).all()
+def listar_clientes(db: Session):
+    return db.query(Cliente).all()
 
 
-def obtener_usuario_por_id(db: Session, usuario_id: uuid.UUID):
-    return db.query(Usuario).filter(Usuario.id == usuario_id).first()
-
-
-def actualizar_usuario(db: Session, usuario_id: uuid.UUID, **kwargs):
-    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if usuario:
-        for key, value in kwargs.items():
-            if hasattr(usuario, key) and value is not None:
-                setattr(usuario, key, value)
+def actualizar_cliente(db: Session, cliente_id: int, cliente: ClienteUpdate):
+    cliente_db = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if cliente_db:
+        for key, value in cliente.model_dump().items():
+            setattr(cliente_db, key, value)
         db.commit()
-        db.refresh(usuario)
-    return usuario
+        db.refresh(cliente_db)
+    return cliente_db
 
 
-def eliminar_usuario(db: Session, usuario_id: uuid.UUID):
-    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if usuario:
-        db.delete(usuario)
+def eliminar_cliente(db: Session, cliente_id: int):
+    cliente_db = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if cliente_db:
+        db.delete(cliente_db)
         db.commit()
-    return usuario
+    return cliente_db

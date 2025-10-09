@@ -1,99 +1,44 @@
-"""
-Operaciones CRUD para la entidad Cliente
-"""
-
-from typing import List, Optional
-
-from entities.cliente import Cliente
-from schemas import ClienteCreate, ClienteUpdate
 from sqlalchemy.orm import Session
+from models.cliente import Cliente
+import uuid
 
 
-class ClienteCRUD:
-    def __init__(self, db: Session):
-        self.db = db
+def get_clientes(db: Session):
+    return db.query(Cliente).all()
 
-    def crear_cliente(self, cliente_data: ClienteCreate) -> Cliente:
-        """
-        Crea un nuevo cliente en la base de datos.
 
-        Args:
-            cliente_data: Datos del cliente a crear.
+def get_cliente(db: Session, cliente_id: str):
+    return db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
-        Returns:
-            El objeto Cliente creado.
-        """
-        nuevo_cliente = Cliente(**cliente_data.model_dump())
-        self.db.add(nuevo_cliente)
-        self.db.commit()
-        self.db.refresh(nuevo_cliente)
-        return nuevo_cliente
 
-    def obtener_clientes(self, skip: int = 0, limit: int = 100) -> List[Cliente]:
-        """
-        Obtiene una lista de todos los clientes con paginación.
+def create_cliente(db: Session, cliente_data):
+    nuevo_cliente = Cliente(
+        id=str(uuid.uuid4()),
+        nombre=cliente_data.nombre,
+        correo=cliente_data.correo,
+        telefono=cliente_data.telefono,
+    )
+    db.add(nuevo_cliente)
+    db.commit()
+    db.refresh(nuevo_cliente)
+    return nuevo_cliente
 
-        Args:
-            skip: Número de registros a saltar.
-            limit: Número máximo de registros a devolver.
 
-        Returns:
-            Lista de objetos Cliente.
-        """
-        return self.db.query(Cliente).offset(skip).limit(limit).all()
+def update_cliente(db: Session, cliente_id: str, cliente_data):
+    cliente = get_cliente(db, cliente_id)
+    if not cliente:
+        return None
+    for key, value in cliente_data.dict(exclude_unset=True).items():
+        setattr(cliente, key, value)
+    db.commit()
+    db.refresh(cliente)
+    return cliente
 
-    def obtener_cliente_por_id(self, cliente_id: int) -> Optional[Cliente]:
-        """
-        Obtiene un cliente por su ID.
 
-        Args:
-            cliente_id: ID del cliente a buscar.
-
-        Returns:
-            El objeto Cliente o None si no se encuentra.
-        """
-        return self.db.query(Cliente).filter(Cliente.id == cliente_id).first()
-
-    def actualizar_cliente(
-        self, cliente_id: int, cliente_data: ClienteUpdate
-    ) -> Optional[Cliente]:
-        """
-        Actualiza un cliente existente.
-
-        Args:
-            cliente_id: ID del cliente a actualizar.
-            cliente_data: Datos para actualizar.
-
-        Returns:
-            El objeto Cliente actualizado o None si no se encuentra.
-        """
-        cliente_db = self.obtener_cliente_por_id(cliente_id)
-        if not cliente_db:
-            return None
-
-        update_data = cliente_data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(cliente_db, field, value)
-
-        self.db.commit()
-        self.db.refresh(cliente_db)
-        return cliente_db
-
-    def eliminar_cliente(self, cliente_id: int) -> bool:
-        """
-        Elimina un cliente de la base de datos.
-
-        Args:
-            cliente_id: ID del cliente a eliminar.
-
-        Returns:
-            True si se eliminó correctamente, False en caso contrario.
-        """
-        cliente_db = self.obtener_cliente_por_id(cliente_id)
-        if cliente_db:
-            # Aquí podrías añadir lógica para manejar dependencias,
-            # como facturas o carritos asociados al cliente.
-            self.db.delete(cliente_db)
-            self.db.commit()
-            return True
-        return False
+def delete_cliente(db: Session, cliente_id: str):
+    cliente = get_cliente(db, cliente_id)
+    if not cliente:
+        return None
+    db.delete(cliente)
+    db.commit()
+    return cliente
