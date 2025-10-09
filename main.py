@@ -1,87 +1,71 @@
-"""
-Sistema de gestión de productos con ORM SQLAlchemy y Neon PostgreSQL
-API REST con FastAPI - Sin interfaz de consola
-"""
-import uvicorn
-from routers import (auth, carrito, cliente, factura, producto,
-                     tipo_producto, usuario)
-from database.config import create_tables
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import date
 
-# Cargar variables de entorno desde el archivo .env
-load_dotenv()
-
-# Crear la aplicación FastAPI
-app = FastAPI(
-    title="Sistema de Gestión de Productos",
-    description="API REST para gestión de usuarios, categorías y productos con autenticación",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
-
-# Configurar CORS para permitir peticiones desde el frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # En producción, especificar dominios específicos
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Incluir los routers de las APIs
-app.include_router(auth.router)
-app.include_router(usuario.router)
-app.include_router(carrito.router)
-app.include_router(cliente.router)
-app.include_router(factura.router)
-app.include_router(producto.router)
-app.include_router(tipo_producto.router)
+app = FastAPI(title="API de Usuarios")
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Evento de inicio de la aplicación"""
-    print("Iniciando Sistema de Gestión de Tienda Online...")
-    print("Configurando base de datos...")
-    create_tables()
-    print("Sistema listo para usar.")
-    print("Documentación disponible en: http://localhost:8000/docs")
+# --- MODELO DE DATOS ---
+class Usuario(BaseModel):
+    id: int
+    nombre: str
+    apellido: str
+    rol: str
+    fecha_nacimiento: date
 
 
-@app.get("/", tags=["raíz"])
-async def root():
-    """Endpoint raíz que devuelve información básica de la API."""
-    return {
-        "mensaje": "Bienvenido al Sistema de Gestión de Productos",
-        "version": "1.0.0",
-        "documentacion": "/docs",
-        "redoc": "/redoc",
-        "endpoints": {
-            "autenticacion": "/auth",
-            "usuarios": "/usuarios",
-            "tipos_producto": "/tipos_producto",
-            "productos": "/productos",
-            "clientes": "/clientes",
-            "carrito": "/carrito",
-            "facturas": "/facturas",
-        },
-    }
+# --- "BASE DE DATOS" EN MEMORIA ---
+usuarios = []
+
+# --- ENDPOINTS CRUD ---
 
 
-def main():
-    """Función principal para ejecutar el servidor"""
-    print("Iniciando servidor FastAPI...")
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,  # Recargar automáticamente en desarrollo
-        log_level="info",
-    )
+@app.get("/")
+def home():
+    return {"mensaje": "Bienvenido a la API de Usuarios"}
 
 
-if __name__ == "__main__":
-    main()
+# Crear un usuario
+@app.post("/usuarios/", response_model=Usuario)
+def crear_usuario(usuario: Usuario):
+    for u in usuarios:
+        if u.id == usuario.id:
+            raise HTTPException(status_code=400, detail="El ID ya existe.")
+    usuarios.append(usuario)
+    return usuario
+
+
+# Listar todos los usuarios
+@app.get("/usuarios/", response_model=List[Usuario])
+def listar_usuarios():
+    return usuarios
+
+
+# Obtener un usuario por su ID
+@app.get("/usuarios/{usuario_id}", response_model=Usuario)
+def obtener_usuario(usuario_id: int):
+    for usuario in usuarios:
+        if usuario.id == usuario_id:
+            return usuario
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+
+# Actualizar un usuario
+@app.put("/usuarios/{usuario_id}", response_model=Usuario)
+def actualizar_usuario(usuario_id: int, usuario_actualizado: Usuario):
+    for i, usuario in enumerate(usuarios):
+        if usuario.id == usuario_id:
+            usuarios[i] = usuario_actualizado
+            return usuario_actualizado
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+
+# Eliminar un usuario
+@app.delete("/usuarios/{usuario_id}")
+def eliminar_usuario(usuario_id: int):
+    for i, usuario in enumerate(usuarios):
+        if usuario.id == usuario_id:
+            usuarios.pop(i)
+            return {"mensaje": f"Usuario con ID {usuario_id} eliminado correctamente"}
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
