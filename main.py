@@ -1,9 +1,18 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
 
 app = FastAPI(title="API de Usuarios")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Puedes restringirlo a tu frontend si quieres más seguridad
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # --- MODELO DE DATOS ---
@@ -12,7 +21,7 @@ class Usuario(BaseModel):
     nombre: str
     apellido: str
     rol: str
-    fecha_nacimiento: date
+   
 
 
 # --- "BASE DE DATOS" EN MEMORIA ---
