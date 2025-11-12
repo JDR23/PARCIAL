@@ -2,23 +2,49 @@ from pydantic import BaseModel
 from datetime import date
 
 
-class ClienteBase(BaseModel):
+from pydantic import BaseModel, EmailStr
+import uuid
+
+class UsuarioBase(BaseModel):
     nombre: str
-    apellido: str
+    correo: EmailStr
+    contrasena: str
     rol: str
-    fecha_nacimiento: date
 
-
-class ClienteCreate(ClienteBase):
+class UsuarioCreate(UsuarioBase):
     pass
 
-
-class ClienteUpdate(ClienteBase):
+class UsuarioUpdate(UsuarioBase):
     pass
 
+class UsuarioSchema(UsuarioBase):
+    id: uuid.UUID
 
-class ClienteResponse(ClienteBase):
-    id: int
+    class Config:
+        from_attributes = True
+
+
+# schemas.py
+from pydantic import BaseModel, EmailStr
+import uuid
+
+# ==========================
+# USUARIO SCHEMAS
+# ==========================
+class UsuarioBase(BaseModel):
+    nombre: str
+    correo: EmailStr
+    contrasena: str
+    rol: str
+
+class UsuarioCreate(UsuarioBase):
+    pass
+
+class UsuarioUpdate(UsuarioBase):
+    pass
+
+class UsuarioSchema(UsuarioBase):
+    id: uuid.UUID
 
     class Config:
         from_attributes = True
