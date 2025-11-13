@@ -8,12 +8,15 @@
     body{font-family:Inter,Arial,sans-serif;background:#f4f6f8;margin:0;padding:20px}
     .card{max-width:980px;margin:0 auto;background:#fff;padding:18px;border-radius:8px;box-shadow:0 6px 18px rgba(18,38,63,0.06)}
     h1{margin:0 0 14px}
+    .header-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
     form{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
     input,select,button{padding:10px;border-radius:6px;border:1px solid #d1d7df;font-size:14px}
-    input[type="number"]{width:90px}
     input[type="text"],input[type="email"],input[type="password"]{flex:1;min-width:160px}
     button{background:#0d6efd;color:#fff;border:none;cursor:pointer}
     button.secondary{background:#6c757d}
+    button.danger{background:#dc3545}
+    .search-box{display:flex;gap:10px;margin-bottom:15px}
+    .search-box input{flex:1}
     table{width:100%;border-collapse:collapse;margin-top:10px}
     th,td{padding:10px;border-bottom:1px solid #e9eef4;text-align:left}
     th{background:#0d6efd;color:#fff}
@@ -21,17 +24,41 @@
     .msg{padding:8px;margin:8px 0;border-radius:6px}
     .success{background:#e6f6ea;color:#145a2f}
     .error{background:#fdecea;color:#7a1b1b}
+    .id-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .token-info{background:#e7f3ff;padding:8px;border-radius:6px;margin-bottom:10px;font-size:12px}
   </style>
 </head>
 <body>
   <div class="card">
-    <h1>Gestión de Usuarios</h1>
+    <div class="header-actions">
+      <h1>Gestión de Usuarios</h1>
+      <div>
+        <button onclick="window.location.href='/'" class="secondary">← Volver al Login</button>
+        <button onclick="logout()" class="danger">Cerrar Sesión</button>
+      </div>
+    </div>
+    
+    <div class="token-info" id="tokenInfo" style="display:none;">
+      <strong>🔐 Autenticado con JWT</strong> | Token válido
+    </div>
 
     <div id="mensajes"></div>
 
+    <!-- Búsqueda -->
+    <div class="search-box">
+      <input type="text" id="buscarNombre" placeholder="Buscar por nombre...">
+      <input type="text" id="buscarCorreo" placeholder="Buscar por correo...">
+      <select id="buscarRol">
+        <option value="">Todos los roles</option>
+        <option value="admin">Admin</option>
+        <option value="usuario">Usuario</option>
+      </select>
+      <button onclick="buscarUsuarios()">🔍 Buscar</button>
+      <button onclick="cargarUsuarios()" class="secondary">🔄 Mostrar Todos</button>
+    </div>
+
     <form id="formUsuario">
       <input type="hidden" id="editingId" value="">
-      <input type="number" id="id" placeholder="ID" required />
       <input type="text" id="nombre" placeholder="Nombre" required />
       <input type="email" id="correo" placeholder="Correo" required />
       <input type="password" id="contrasena" placeholder="Contraseña" required />
@@ -55,12 +82,12 @@
     </div>
   </div>
 
+  <script src="/frontend/js/api.js"></script>
   <script>
     const API = "/usuarios/";
     const tabla = document.getElementById("tablaUsuarios");
     const form = document.getElementById("formUsuario");
     const mensajes = document.getElementById("mensajes");
-    const idInput = document.getElementById("id");
     const nombreInput = document.getElementById("nombre");
     const correoInput = document.getElementById("correo");
     const passInput = document.getElementById("contrasena");
@@ -69,87 +96,110 @@
     const guardarBtn = document.getElementById("guardarBtn");
     const cancelBtn = document.getElementById("cancelEditBtn");
 
+    // Verificar autenticación al cargar
+    window.addEventListener('DOMContentLoaded', () => {
+      if (getAuthToken()) {
+        document.getElementById('tokenInfo').style.display = 'block';
+        cargarUsuarios();
+      } else {
+        alert('No estás autenticado. Redirigiendo al login...');
+        window.location.href = '/';
+      }
+    });
+
+    function logout() {
+      clearAuthToken();
+      window.location.href = '/';
+    }
+
     function showMsg(text, type="success"){
       mensajes.innerHTML = `<div class="msg ${type==='success' ? 'success' : 'error'}">${text}</div>`;
       setTimeout(()=> mensajes.innerHTML = "", 3000);
     }
 
-    async function cargarUsuarios(){
+    async function cargarUsuarios(nombre = null, correo = null, rol = null){
       try{
-        const res = await fetch(API);
-        if(!res.ok) throw new Error("Error cargando usuarios");
-        const data = await res.json();
+        let url = API;
+        const params = new URLSearchParams();
+        if (nombre) params.append('nombre', nombre);
+        if (correo) params.append('correo', correo);
+        if (rol) params.append('rol', rol);
+        if (params.toString()) url += '?' + params.toString();
+
+        const { data } = await apiRequest(url, { method: 'GET' });
         tabla.innerHTML = "";
+        if (data.length === 0) {
+          tabla.innerHTML = '<tr><td colspan="6" style="text-align:center;">No se encontraron usuarios</td></tr>';
+          return;
+        }
         data.forEach(u=>{
             tabla.innerHTML += `
               <tr>
-                <td>${u.id}</td>
+                <td class="id-cell" title="${u.id}">${u.id}</td>
                 <td>${u.nombre}</td>
                 <td>${u.correo}</td>
                 <td>${u.contrasena}</td>
                 <td>${u.rol}</td>
                 <td class="actions">
-                  <button onclick="iniciarEdicion(${u.id})">Editar</button>
-                  <button onclick="eliminarUsuario(${u.id})" style="background:#dc3545">Eliminar</button>
+                  <button onclick='iniciarEdicion("${u.id}")'>Editar</button>
+                  <button onclick='eliminarUsuario("${u.id}")' class="danger">Eliminar</button>
                 </td>
               </tr>
             `;
         });
       }catch(err){
-        showMsg(err.message, "error");
+        if (err.message.includes('401') || err.message.includes('credenciales')) {
+          showMsg("Sesión expirada. Por favor, inicia sesión nuevamente.", "error");
+          setTimeout(() => logout(), 2000);
+        } else {
+          showMsg(err.message, "error");
+        }
       }
+    }
+
+    function buscarUsuarios() {
+      const nombre = document.getElementById('buscarNombre').value.trim();
+      const correo = document.getElementById('buscarCorreo').value.trim();
+      const rol = document.getElementById('buscarRol').value;
+      cargarUsuarios(nombre || null, correo || null, rol || null);
     }
 
     async function crearUsuario(payload){
-      const res = await fetch(API, {
+      const { data } = await apiRequest(API, {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
         body: JSON.stringify(payload)
       });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({detail: "Error"}));
-        throw new Error(err.detail || "Error creando usuario");
-      }
-      return res.json();
+      return data;
     }
 
     async function actualizarUsuario(id, payload){
-      const res = await fetch(API + id, {
+      const { data } = await apiRequest(API + id, {
         method: "PUT",
-        headers: {"Content-Type":"application/json"},
         body: JSON.stringify(payload)
       });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({detail:"Error"}));
-        throw new Error(err.detail || "Error actualizando usuario");
-      }
-      return res.json();
+      return data;
     }
 
     async function eliminarUsuario(id){
-      if(!confirm("¿Eliminar usuario id "+id+"?")) return;
-      const res = await fetch(API + id, { method: "DELETE" });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({detail:"Error"}));
-        showMsg(err.detail || "Error eliminando", "error");
-        return;
+      if(!confirm("¿Eliminar usuario?")) return;
+      try {
+        await apiRequest(API + id, { method: "DELETE" });
+        showMsg("Usuario eliminado");
+        cargarUsuarios();
+      } catch(err) {
+        showMsg(err.message || "Error eliminando", "error");
       }
-      showMsg("Usuario eliminado");
-      cargarUsuarios();
     }
 
     // click editar -> llena el form
     window.iniciarEdicion = async function(id){
       try{
-        const res = await fetch(API + id);
-        if(!res.ok) throw new Error("Usuario no encontrado");
-        const u = await res.json();
-        editingIdInput.value = u.id;
-        idInput.value = u.id;
-        nombreInput.value = u.nombre;
-        correoInput.value = u.correo;
-        passInput.value = u.contrasena;
-        rolInput.value = u.rol;
+        const { data } = await apiRequest(API + id, { method: 'GET' });
+        editingIdInput.value = data.id;
+        nombreInput.value = data.nombre;
+        correoInput.value = data.correo;
+        passInput.value = data.contrasena;
+        rolInput.value = data.rol;
         guardarBtn.textContent = "Actualizar";
         cancelBtn.style.display = "inline-block";
       }catch(e){
@@ -167,7 +217,6 @@
     form.addEventListener("submit", async (e)=>{
       e.preventDefault();
       const payload = {
-        id: parseInt(idInput.value, 10),
         nombre: nombreInput.value.trim(),
         correo: correoInput.value.trim(),
         contrasena: passInput.value,
@@ -175,7 +224,6 @@
       };
       try{
         if(editingIdInput.value){
-          // actualizar
           await actualizarUsuario(editingIdInput.value, payload);
           showMsg("Usuario actualizado");
         } else {
@@ -188,12 +236,14 @@
         cancelBtn.style.display = "none";
         cargarUsuarios();
       }catch(err){
-        showMsg(err.message || "Error", "error");
+        if (err.message.includes('401') || err.message.includes('credenciales')) {
+          showMsg("Sesión expirada. Por favor, inicia sesión nuevamente.", "error");
+          setTimeout(() => logout(), 2000);
+        } else {
+          showMsg(err.message || "Error", "error");
+        }
       }
     });
-
-    // cargar al inicio
-    cargarUsuarios();
   </script>
 </body>
 </html>

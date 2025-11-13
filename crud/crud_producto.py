@@ -1,45 +1,54 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from models.producto import Producto
+from schemas import ProductoCreate, ProductoUpdate
 import uuid
 
 
-def get_productos(db: Session):
-    return db.query(Producto).all()
+class ProductoCRUD:
+    def __init__(self, db: Session):
+        self.db = db
 
+    def crear_producto(self, producto_data: ProductoCreate):
+        nuevo_producto = Producto(
+            id=str(uuid.uuid4()),
+            nombre=producto_data.nombre,
+            descripcion=getattr(producto_data, 'descripcion', None),
+            precio=producto_data.precio,
+            stock=getattr(producto_data, 'stock', 0),
+        )
+        self.db.add(nuevo_producto)
+        self.db.commit()
+        self.db.refresh(nuevo_producto)
+        return nuevo_producto
 
-def get_producto(db: Session, producto_id: str):
-    return db.query(Producto).filter(Producto.id == producto_id).first()
+    def obtener_productos(self, skip: int = 0, limit: int = 100):
+        return self.db.query(Producto).offset(skip).limit(limit).all()
 
+    def obtener_producto(self, producto_id: str):
+        return self.db.query(Producto).filter(Producto.id == producto_id).first()
 
-def create_producto(db: Session, producto_data):
-    nuevo_producto = Producto(
-        id=str(uuid.uuid4()),
-        nombre=producto_data.nombre,
-        descripcion=producto_data.descripcion,
-        precio=producto_data.precio,
-        tipo_id=producto_data.tipo_id,
-    )
-    db.add(nuevo_producto)
-    db.commit()
-    db.refresh(nuevo_producto)
-    return nuevo_producto
+    def buscar_productos_por_nombre(self, nombre: str):
+        # Usar func.lower para compatibilidad con SQLite y PostgreSQL
+        return self.db.query(Producto).filter(
+            func.lower(Producto.nombre).contains(func.lower(nombre))
+        ).all()
 
+    def actualizar_producto(self, producto_id: str, producto_data: ProductoUpdate):
+        producto = self.obtener_producto(producto_id)
+        if not producto:
+            return None
+        update_data = producto_data.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(producto, key, value)
+        self.db.commit()
+        self.db.refresh(producto)
+        return producto
 
-def update_producto(db: Session, producto_id: str, producto_data):
-    producto = get_producto(db, producto_id)
-    if not producto:
-        return None
-    for key, value in producto_data.dict(exclude_unset=True).items():
-        setattr(producto, key, value)
-    db.commit()
-    db.refresh(producto)
-    return producto
-
-
-def delete_producto(db: Session, producto_id: str):
-    producto = get_producto(db, producto_id)
-    if not producto:
-        return None
-    db.delete(producto)
-    db.commit()
-    return producto
+    def eliminar_producto(self, producto_id: str):
+        producto = self.obtener_producto(producto_id)
+        if not producto:
+            return None
+        self.db.delete(producto)
+        self.db.commit()
+        return producto

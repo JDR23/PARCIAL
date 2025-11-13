@@ -47,8 +47,18 @@ async def obtener_clientes(
         )
 
 
+@router.get("/buscar/", response_model=List[ClienteResponse])
+async def buscar_clientes(nombre: str = None, correo: str = None, db: Session = Depends(get_db)):
+    """
+    Busca clientes por nombre o correo.
+    """
+    cliente_crud = ClienteCRUD(db)
+    clientes = cliente_crud.buscar_clientes(nombre=nombre, correo=correo)
+    return clientes
+
+
 @router.get("/{cliente_id}", response_model=ClienteResponse)
-async def obtener_cliente(cliente_id: int, db: Session = Depends(get_db)):
+async def obtener_cliente(cliente_id: str, db: Session = Depends(get_db)):
     """
     Obtiene un cliente por su ID.
     """
@@ -63,7 +73,7 @@ async def obtener_cliente(cliente_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{cliente_id}", response_model=ClienteResponse)
 async def actualizar_cliente(
-    cliente_id: int, cliente_data: ClienteUpdate, db: Session = Depends(get_db)
+    cliente_id: str, cliente_data: ClienteUpdate, db: Session = Depends(get_db)
 ):
     """
     Actualiza la información de un cliente existente.
@@ -78,7 +88,7 @@ async def actualizar_cliente(
 
 
 @router.delete("/{cliente_id}", status_code=status.HTTP_200_OK)
-async def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
+async def eliminar_cliente(cliente_id: str, db: Session = Depends(get_db)):
     """
     Elimina un cliente por su ID.
     """
