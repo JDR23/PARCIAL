@@ -1,102 +1,90 @@
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-import sqlite3
+from typing import List
+from pydantic import BaseModel
 
-app = FastAPI()
+app = FastAPI(title="API de Usuarios (en memoria)")
 
-from fastapi.middleware.cors import CORSMiddleware
+# Montar carpeta frontend como estática
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
-origins = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500"
+
+# ---------------------------
+# MODELO (Pydantic simple)
+# ---------------------------
+class UsuarioModel(BaseModel):
+    id: int
+    nombre: str
+    correo: str
+    contrasena: str
+    rol: str
+
+
+# ---------------------------
+# "Base de datos" en memoria
+# ---------------------------
+usuarios = [
+    {"id": 1, "nombre": "Juan Pérez", "correo": "juan@mail.com", "contrasena": "1234", "rol": "admin"},
+    {"id": 2, "nombre": "Ana López",  "correo": "ana@mail.com",  "contrasena": "abcd", "rol": "usuario"},
 ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# Conexión inicial a la base de datos
-def crear_tabla_usuarios():
-    conn = sqlite3.connect("basedatos.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre_usuario TEXT UNIQUE NOT NULL,
-            contrasena TEXT NOT NULL,
-            rol TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+# ---------------------------
+# RUTAS API (JSON)
+# ---------------------------
+@app.get("/usuarios/", response_model=List[UsuarioModel])
+def listar_usuarios(nombre: str = None):
+    """
+    Listar usuarios. Opcional: filtrado por nombre vía query param ?nombre=...
+    """
+    if nombre:
+        q = nombre.lower()
+        return [u for u in usuarios if q in u["nombre"].lower()]
+    return usuarios
 
-crear_tabla_usuarios()
 
-# Archivos estáticos y plantillas
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="vista")
+@app.get("/usuarios/{usuario_id}", response_model=UsuarioModel)
+def obtener_usuario(usuario_id: int):
+    for u in usuarios:
+        if u["id"] == usuario_id:
+            return u
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-# Ruta de inicio
-@app.get("/inicio", response_class=HTMLResponse)
-async def inicio(request: Request):
-    return templates.TemplateResponse("inicio.html", {"request": request})
 
-# Ruta para login
-@app.post("/login")
-async def login(request: Request, nombre_usuario: str = Form(...), contrasena: str = Form(...)):
-    conn = sqlite3.connect("basedatos.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM usuarios WHERE nombre_usuario = ? AND contrasena = ?", (nombre_usuario, contrasena))
-    usuario = cursor.fetchone()
-    conn.close()
+@app.post("/usuarios/", response_model=UsuarioModel)
+def crear_usuario(payload: UsuarioModel):
+    # verificar id único
+    if any(u["id"] == payload.id for u in usuarios):
+        raise HTTPException(status_code=400, detail="El ID ya existe")
+    nuevo = payload.dict()
+    usuarios.append(nuevo)
+    return nuevo
 
-    if usuario:
-        rol = usuario[3]
-        if rol == "admin":
-            return RedirectResponse(url="/menu_admin", status_code=303)
-        else:
-            return RedirectResponse(url="/menu_usuario", status_code=303)
-    else:
-        return templates.TemplateResponse("inicio.html", {"request": request, "error": "Credenciales incorrectas"})
 
-# Ruta menú de administrador
-@app.get("/menu_admin", response_class=HTMLResponse)
-async def menu_admin(request: Request):
-    return templates.TemplateResponse("menu_admin.html", {"request": request, "usuario": "admin"})
+@app.put("/usuarios/{usuario_id}", response_model=UsuarioModel)
+def actualizar_usuario(usuario_id: int, payload: UsuarioModel):
+    for i, u in enumerate(usuarios):
+        if u["id"] == usuario_id:
+            usuarios[i] = payload.dict()
+            return usuarios[i]
+    raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-# Ruta menú de usuario
-@app.get("/menu_usuario", response_class=HTMLResponse)
-async def menu_usuario(request: Request):
-    return templates.TemplateResponse("menu_usuario.html", {"request": request, "usuario": "usuario"})
 
-# Ruta para crear un administrador de emergencia (GET o POST)
-@app.get("/crear_admin_emergencia")
-@app.post("/crear_admin_emergencia")
-def crear_admin_emergencia():
-    conn = sqlite3.connect("basedatos.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM usuarios WHERE rol = 'admin'")
-    admin = cursor.fetchone()
+@app.delete("/usuarios/{usuario_id}")
+def eliminar_usuario(usuario_id: int):
+    global usuarios
+    before = len(usuarios)
+    usuarios = [u for u in usuarios if u["id"] != usuario_id]
+    if len(usuarios) == before:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {"ok": True, "message": "Usuario eliminado"}
 
-    if admin:
-        conn.close()
-        return {"mensaje": "Ya existe un administrador."}
 
-    cursor.execute(
-        "INSERT INTO usuarios (nombre_usuario, contrasena, rol) VALUES (?, ?, ?)",
-        ("admin", "1234", "admin")
-    )
-    conn.commit()
-    conn.close()
-    return {"mensaje": "Administrador creado con éxito. Usuario: admin, Contraseña: 1234"}
-
-# Ruta raíz
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return RedirectResponse(url="/inicio")
+# ---------------------------
+# SERVIR FRONTEND
+# ---------------------------
+@app.get("/", include_in_schema=False)
+def root():
+    # devuelve el archivo estático principal
+    return FileResponse("frontend/usuarios.html")

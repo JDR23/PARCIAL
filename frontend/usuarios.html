@@ -1,125 +1,53 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gestión de Usuarios con Login JWT</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gestión de Usuarios</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background: #f6f8fa;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    .container {
-      max-width: 950px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    input, select, button {
-      padding: 8px;
-      margin: 5px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background: #007bff;
-      color: white;
-    }
-    .btn-editar {
-      background: orange;
-      color: white;
-    }
-    .btn-eliminar {
-      background: red;
-      color: white;
-    }
-    #buscador {
-      width: 60%;
-    }
-    #login {
-      text-align: center;
-      background: #e9f0fa;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-    #cerrarSesion {
-      background-color: #6c757d;
-      color: white;
-      float: right;
-      margin-top: -30px;
-      padding: 6px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #cerrarSesion:hover {
-      background-color: #495057;
-    }
+    body{font-family:Inter,Arial,sans-serif;background:#f4f6f8;margin:0;padding:20px}
+    .card{max-width:980px;margin:0 auto;background:#fff;padding:18px;border-radius:8px;box-shadow:0 6px 18px rgba(18,38,63,0.06)}
+    h1{margin:0 0 14px}
+    form{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+    input,select,button{padding:10px;border-radius:6px;border:1px solid #d1d7df;font-size:14px}
+    input[type="number"]{width:90px}
+    input[type="text"],input[type="email"],input[type="password"]{flex:1;min-width:160px}
+    button{background:#0d6efd;color:#fff;border:none;cursor:pointer}
+    button.secondary{background:#6c757d}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:10px;border-bottom:1px solid #e9eef4;text-align:left}
+    th{background:#0d6efd;color:#fff}
+    .actions button{margin-right:6px}
+    .msg{padding:8px;margin:8px 0;border-radius:6px}
+    .success{background:#e6f6ea;color:#145a2f}
+    .error{background:#fdecea;color:#7a1b1b}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Gestión de Usuarios (JWT + CRUD)</h1>
-    <button id="cerrarSesion" onclick="cerrarSesion()">Cerrar sesión</button>
+  <div class="card">
+    <h1>Gestión de Usuarios</h1>
 
-    <!-- LOGIN -->
-    <div id="login">
-      <input type="email" id="loginCorreo" placeholder="Correo" />
-      <input type="password" id="loginContrasena" placeholder="Contraseña" />
-      <button onclick="login()">Iniciar sesión</button>
-      <span id="estadoLogin" style="margin-left:10px; color:green;"></span>
-    </div>
+    <div id="mensajes"></div>
 
-    <!-- CRUD -->
-    <div id="contenido" style="display:none;">
-      <div>
-        <input type="text" id="buscador" placeholder="Buscar por nombre..." />
-        <button onclick="buscarUsuario()">Buscar</button>
-        <button onclick="cargarUsuarios()">Mostrar todos</button>
-      </div>
+    <form id="formUsuario">
+      <input type="hidden" id="editingId" value="">
+      <input type="number" id="id" placeholder="ID" required />
+      <input type="text" id="nombre" placeholder="Nombre" required />
+      <input type="email" id="correo" placeholder="Correo" required />
+      <input type="password" id="contrasena" placeholder="Contraseña" required />
+      <select id="rol">
+        <option value="usuario">Usuario</option>
+        <option value="admin">Administrador</option>
+      </select>
+      <button type="submit" id="guardarBtn">Agregar</button>
+      <button type="button" id="cancelEditBtn" class="secondary" style="display:none">Cancelar</button>
+    </form>
 
-      <form id="formUsuario">
-        <input type="number" id="id" placeholder="ID" required />
-        <input type="text" id="nombre" placeholder="Nombre" required />
-        <input type="email" id="correo" placeholder="Correo" required />
-        <input type="text" id="contrasena" placeholder="Contraseña" required />
-        <select id="rol" required>
-          <option value="">Seleccionar rol</option>
-          <option value="admin">Admin</option>
-          <option value="usuario">Usuario</option>
-        </select>
-        <button type="submit">Guardar</button>
-      </form>
-
+    <div style="overflow:auto">
       <table>
         <thead>
           <tr>
-            <th>ID</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Acciones</th>
+            <th>ID</th><th>Nombre</th><th>Correo</th><th>Contraseña</th><th>Rol</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody id="tablaUsuarios"></tbody>
@@ -128,161 +56,144 @@
   </div>
 
   <script>
-    const API_URL = "http://127.0.0.1:8000/usuarios/";
-    const LOGIN_URL = "http://127.0.0.1:8000/login";
-    let token = "";
-    let modoEdicion = false;
-    let idActual = null;
+    const API = "/usuarios/";
+    const tabla = document.getElementById("tablaUsuarios");
+    const form = document.getElementById("formUsuario");
+    const mensajes = document.getElementById("mensajes");
+    const idInput = document.getElementById("id");
+    const nombreInput = document.getElementById("nombre");
+    const correoInput = document.getElementById("correo");
+    const passInput = document.getElementById("contrasena");
+    const rolInput = document.getElementById("rol");
+    const editingIdInput = document.getElementById("editingId");
+    const guardarBtn = document.getElementById("guardarBtn");
+    const cancelBtn = document.getElementById("cancelEditBtn");
 
-    // ===== LOGIN =====
-    async function login() {
-      const correo = document.getElementById("loginCorreo").value;
-      const contrasena = document.getElementById("loginContrasena").value;
+    function showMsg(text, type="success"){
+      mensajes.innerHTML = `<div class="msg ${type==='success' ? 'success' : 'error'}">${text}</div>`;
+      setTimeout(()=> mensajes.innerHTML = "", 3000);
+    }
 
-      if (!correo || !contrasena) {
-        alert("Por favor completa ambos campos.");
-        return;
-      }
-
-      // ✅ Enviar como formulario (no JSON)
-      const body = new URLSearchParams();
-      body.append("username", correo);
-      body.append("password", contrasena);
-
-      const res = await fetch(LOGIN_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body
-      });
-
-      if (res.ok) {
+    async function cargarUsuarios(){
+      try{
+        const res = await fetch(API);
+        if(!res.ok) throw new Error("Error cargando usuarios");
         const data = await res.json();
-        token = data.access_token;
-        localStorage.setItem("token", token);
-        document.getElementById("estadoLogin").innerText = "Sesión iniciada ✅";
-        document.getElementById("login").style.display = "none";
-        document.getElementById("contenido").style.display = "block";
-        cargarUsuarios();
-      } else {
-        alert("❌ Credenciales incorrectas o error en el formato del login");
+        tabla.innerHTML = "";
+        data.forEach(u=>{
+            tabla.innerHTML += `
+              <tr>
+                <td>${u.id}</td>
+                <td>${u.nombre}</td>
+                <td>${u.correo}</td>
+                <td>${u.contrasena}</td>
+                <td>${u.rol}</td>
+                <td class="actions">
+                  <button onclick="iniciarEdicion(${u.id})">Editar</button>
+                  <button onclick="eliminarUsuario(${u.id})" style="background:#dc3545">Eliminar</button>
+                </td>
+              </tr>
+            `;
+        });
+      }catch(err){
+        showMsg(err.message, "error");
       }
     }
 
-    // ===== CRUD =====
-    async function cargarUsuarios() {
-      const res = await fetch(API_URL, {
-        headers: { "Authorization": "Bearer " + (token || localStorage.getItem("token")) }
+    async function crearUsuario(payload){
+      const res = await fetch(API, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
       });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({detail: "Error"}));
+        throw new Error(err.detail || "Error creando usuario");
+      }
+      return res.json();
+    }
 
-      if (res.status === 401) {
-        alert("⚠️ No autorizado. Inicia sesión nuevamente.");
-        cerrarSesion();
+    async function actualizarUsuario(id, payload){
+      const res = await fetch(API + id, {
+        method: "PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({detail:"Error"}));
+        throw new Error(err.detail || "Error actualizando usuario");
+      }
+      return res.json();
+    }
+
+    async function eliminarUsuario(id){
+      if(!confirm("¿Eliminar usuario id "+id+"?")) return;
+      const res = await fetch(API + id, { method: "DELETE" });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({detail:"Error"}));
+        showMsg(err.detail || "Error eliminando", "error");
         return;
       }
-
-      const data = await res.json();
-      mostrarTabla(data);
-    }
-
-    function mostrarTabla(usuarios) {
-      const tbody = document.getElementById("tablaUsuarios");
-      tbody.innerHTML = "";
-      usuarios.forEach(u => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${u.id}</td>
-            <td>${u.nombre}</td>
-            <td>${u.correo}</td>
-            <td>${u.rol}</td>
-            <td>
-              <button class="btn-editar" onclick="editarUsuario(${u.id})">Editar</button>
-              <button class="btn-eliminar" onclick="eliminarUsuario(${u.id})">Eliminar</button>
-            </td>
-          </tr>
-        `;
-      });
-    }
-
-    document.getElementById("formUsuario").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const usuario = {
-        id: parseInt(document.getElementById("id").value),
-        nombre: document.getElementById("nombre").value,
-        correo: document.getElementById("correo").value,
-        contrasena: document.getElementById("contrasena").value,
-        rol: document.getElementById("rol").value
-      };
-
-      const method = modoEdicion ? "PUT" : "POST";
-      const url = modoEdicion ? API_URL + idActual : API_URL;
-
-      await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + (token || localStorage.getItem("token"))
-        },
-        body: JSON.stringify(usuario)
-      });
-
-      modoEdicion = false;
-      idActual = null;
-      e.target.reset();
+      showMsg("Usuario eliminado");
       cargarUsuarios();
-    });
-
-    async function editarUsuario(id) {
-      const res = await fetch(API_URL, { headers: { "Authorization": "Bearer " + (token || localStorage.getItem("token")) }});
-      const data = await res.json();
-      const usuario = data.find(u => u.id === id);
-      document.getElementById("id").value = usuario.id;
-      document.getElementById("nombre").value = usuario.nombre;
-      document.getElementById("correo").value = usuario.correo;
-      document.getElementById("contrasena").value = usuario.contrasena;
-      document.getElementById("rol").value = usuario.rol;
-      modoEdicion = true;
-      idActual = id;
     }
 
-    async function eliminarUsuario(id) {
-      if (confirm("¿Seguro que quieres eliminar este usuario?")) {
-        await fetch(API_URL + id, {
-          method: "DELETE",
-          headers: { "Authorization": "Bearer " + (token || localStorage.getItem("token")) }
-        });
-        cargarUsuarios();
+    // click editar -> llena el form
+    window.iniciarEdicion = async function(id){
+      try{
+        const res = await fetch(API + id);
+        if(!res.ok) throw new Error("Usuario no encontrado");
+        const u = await res.json();
+        editingIdInput.value = u.id;
+        idInput.value = u.id;
+        nombreInput.value = u.nombre;
+        correoInput.value = u.correo;
+        passInput.value = u.contrasena;
+        rolInput.value = u.rol;
+        guardarBtn.textContent = "Actualizar";
+        cancelBtn.style.display = "inline-block";
+      }catch(e){
+        showMsg(e.message, "error");
       }
     }
 
-    async function buscarUsuario() {
-      const nombre = document.getElementById("buscador").value;
-      const res = await fetch(API_URL + "?nombre=" + nombre, {
-        headers: { "Authorization": "Bearer " + (token || localStorage.getItem("token")) }
-      });
-      const data = await res.json();
-      mostrarTabla(data);
-    }
+    cancelBtn.addEventListener("click", ()=> {
+      editingIdInput.value = "";
+      form.reset();
+      guardarBtn.textContent = "Agregar";
+      cancelBtn.style.display = "none";
+    });
 
-    // ===== CERRAR SESIÓN =====
-    function cerrarSesion() {
-      localStorage.removeItem("token");
-      token = "";
-      document.getElementById("contenido").style.display = "none";
-      document.getElementById("login").style.display = "block";
-      document.getElementById("estadoLogin").innerText = "";
-      alert("👋 Sesión cerrada correctamente");
-    }
-
-    // ===== AUTOLOGIN SI HAY TOKEN =====
-    window.addEventListener("load", () => {
-      const savedToken = localStorage.getItem("token");
-      if (savedToken) {
-        token = savedToken;
-        document.getElementById("login").style.display = "none";
-        document.getElementById("contenido").style.display = "block";
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const payload = {
+        id: parseInt(idInput.value, 10),
+        nombre: nombreInput.value.trim(),
+        correo: correoInput.value.trim(),
+        contrasena: passInput.value,
+        rol: rolInput.value
+      };
+      try{
+        if(editingIdInput.value){
+          // actualizar
+          await actualizarUsuario(editingIdInput.value, payload);
+          showMsg("Usuario actualizado");
+        } else {
+          await crearUsuario(payload);
+          showMsg("Usuario creado");
+        }
+        form.reset();
+        editingIdInput.value = "";
+        guardarBtn.textContent = "Agregar";
+        cancelBtn.style.display = "none";
         cargarUsuarios();
+      }catch(err){
+        showMsg(err.message || "Error", "error");
       }
     });
+
+    // cargar al inicio
+    cargarUsuarios();
   </script>
 </body>
 </html>
