@@ -40,8 +40,11 @@ class UsuarioBase(BaseModel):
 class UsuarioCreate(UsuarioBase):
     pass
 
-class UsuarioUpdate(UsuarioBase):
-    pass
+class UsuarioUpdate(BaseModel):
+    nombre: str | None = None
+    correo: EmailStr | None = None
+    contrasena: str | None = None
+    rol: str | None = None
 
 class UsuarioSchema(UsuarioBase):
     id: uuid.UUID

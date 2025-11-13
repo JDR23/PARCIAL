@@ -1,80 +1,102 @@
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import date
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import sqlite3
 
-app = FastAPI(title="API de Usuarios")
+app = FastAPI()
+
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes restringirlo a tu frontend si quieres más seguridad
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Conexión inicial a la base de datos
+def crear_tabla_usuarios():
+    conn = sqlite3.connect("basedatos.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre_usuario TEXT UNIQUE NOT NULL,
+            contrasena TEXT NOT NULL,
+            rol TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
-# --- MODELO DE DATOS ---
-class Usuario(BaseModel):
-    id: int
-    nombre: str
-    apellido: str
-    rol: str
-   
+crear_tabla_usuarios()
 
+# Archivos estáticos y plantillas
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="vista")
 
-# --- "BASE DE DATOS" EN MEMORIA ---
-usuarios = []
+# Ruta de inicio
+@app.get("/inicio", response_class=HTMLResponse)
+async def inicio(request: Request):
+    return templates.TemplateResponse("inicio.html", {"request": request})
 
-# --- ENDPOINTS CRUD ---
+# Ruta para login
+@app.post("/login")
+async def login(request: Request, nombre_usuario: str = Form(...), contrasena: str = Form(...)):
+    conn = sqlite3.connect("basedatos.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM usuarios WHERE nombre_usuario = ? AND contrasena = ?", (nombre_usuario, contrasena))
+    usuario = cursor.fetchone()
+    conn.close()
 
+    if usuario:
+        rol = usuario[3]
+        if rol == "admin":
+            return RedirectResponse(url="/menu_admin", status_code=303)
+        else:
+            return RedirectResponse(url="/menu_usuario", status_code=303)
+    else:
+        return templates.TemplateResponse("inicio.html", {"request": request, "error": "Credenciales incorrectas"})
 
-@app.get("/")
-def home():
-    return {"mensaje": "Bienvenido a la API de Usuarios"}
+# Ruta menú de administrador
+@app.get("/menu_admin", response_class=HTMLResponse)
+async def menu_admin(request: Request):
+    return templates.TemplateResponse("menu_admin.html", {"request": request, "usuario": "admin"})
 
+# Ruta menú de usuario
+@app.get("/menu_usuario", response_class=HTMLResponse)
+async def menu_usuario(request: Request):
+    return templates.TemplateResponse("menu_usuario.html", {"request": request, "usuario": "usuario"})
 
-# Crear un usuario
-@app.post("/usuarios/", response_model=Usuario)
-def crear_usuario(usuario: Usuario):
-    for u in usuarios:
-        if u.id == usuario.id:
-            raise HTTPException(status_code=400, detail="El ID ya existe.")
-    usuarios.append(usuario)
-    return usuario
+# Ruta para crear un administrador de emergencia (GET o POST)
+@app.get("/crear_admin_emergencia")
+@app.post("/crear_admin_emergencia")
+def crear_admin_emergencia():
+    conn = sqlite3.connect("basedatos.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM usuarios WHERE rol = 'admin'")
+    admin = cursor.fetchone()
 
+    if admin:
+        conn.close()
+        return {"mensaje": "Ya existe un administrador."}
 
-# Listar todos los usuarios
-@app.get("/usuarios/", response_model=List[Usuario])
-def listar_usuarios():
-    return usuarios
+    cursor.execute(
+        "INSERT INTO usuarios (nombre_usuario, contrasena, rol) VALUES (?, ?, ?)",
+        ("admin", "1234", "admin")
+    )
+    conn.commit()
+    conn.close()
+    return {"mensaje": "Administrador creado con éxito. Usuario: admin, Contraseña: 1234"}
 
-
-# Obtener un usuario por su ID
-@app.get("/usuarios/{usuario_id}", response_model=Usuario)
-def obtener_usuario(usuario_id: int):
-    for usuario in usuarios:
-        if usuario.id == usuario_id:
-            return usuario
-    raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-
-# Actualizar un usuario
-@app.put("/usuarios/{usuario_id}", response_model=Usuario)
-def actualizar_usuario(usuario_id: int, usuario_actualizado: Usuario):
-    for i, usuario in enumerate(usuarios):
-        if usuario.id == usuario_id:
-            usuarios[i] = usuario_actualizado
-            return usuario_actualizado
-    raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-
-# Eliminar un usuario
-@app.delete("/usuarios/{usuario_id}")
-def eliminar_usuario(usuario_id: int):
-    for i, usuario in enumerate(usuarios):
-        if usuario.id == usuario_id:
-            usuarios.pop(i)
-            return {"mensaje": f"Usuario con ID {usuario_id} eliminado correctamente"}
-    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+# Ruta raíz
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return RedirectResponse(url="/inicio")

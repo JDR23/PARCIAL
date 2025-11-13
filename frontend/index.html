@@ -2,27 +2,48 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión de Usuarios</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inicio de Sesión</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-light">
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Sistema CRUD</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="usuarios.html">Usuarios</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Productos</a></li>
-                </ul>
+<body class="bg-light d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow p-4" style="width: 22rem;">
+        <h3 class="text-center mb-4">🔐 Iniciar Sesión</h3>
+        <!-- Formulario normal de login -->
+        <form id="loginForm">
+            <div class="mb-3">
+                <label for="username" class="form-label">Usuario</label>
+                <input type="text" id="username" class="form-control" placeholder="Ingresa tu usuario" required>
             </div>
-        </div>
-    </nav>
+            <div class="mb-3">
+                <label for="password" class="form-label">Contraseña</label>
+                <input type="password" id="password" class="form-control" placeholder="Ingresa tu contraseña" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+        </form>
 
-    <div class="container mt-5 text-center">
-        <h1>Bienvenido al Sistema CRUD</h1>
-        <p>Selecciona una opción del menú para continuar.</p>
+        <hr>
+
+        <!-- Botón para crear admin de emergencia -->
+        <h5 class="text-center mb-3">Recuperar Admin 🔧</h5>
+        <button id="btnCrearAdmin" class="btn btn-warning w-100">Crear Admin de Emergencia</button>
     </div>
 
+    <script src="usuarios.js"></script>
+
+    <script>
+    document.getElementById("btnCrearAdmin").addEventListener("click", async () => {
+        try {
+            const resp = await fetch("http://127.0.0.1:8000/crear_admin_emergencia", {
+                method: "POST"
+            });
+            const data = await resp.json();
+            alert(data.mensaje);
+        } catch (err) {
+            console.error(err);
+            alert("❌ Error al conectar con el servidor");
+        }
+    });
+    </script>
 </body>
 </html>

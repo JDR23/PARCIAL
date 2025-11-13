@@ -18,6 +18,7 @@ def create_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     return nuevo_usuario
 
 
+
 # Leer usuario por ID
 @router.get("/{usuario_id}", response_model=UsuarioSchema)
 def read_usuario(usuario_id: uuid.UUID, db: Session = Depends(get_db)):
