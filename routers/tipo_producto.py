@@ -47,8 +47,18 @@ async def obtener_tipos_producto(
     return tipos
 
 
+@router.get("/buscar/", response_model=List[TipoProductoResponse])
+async def buscar_tipos_producto(nombre: str = None, db: Session = Depends(get_db)):
+    """
+    Busca tipos de producto por nombre.
+    """
+    crud = TipoProductoCRUD(db)
+    tipos = crud.buscar_tipos_producto_por_nombre(nombre) if nombre else crud.obtener_tipos_producto()
+    return tipos
+
+
 @router.get("/{tipo_id}", response_model=TipoProductoResponse)
-async def obtener_tipo_producto(tipo_id: int, db: Session = Depends(get_db)):
+async def obtener_tipo_producto(tipo_id: str, db: Session = Depends(get_db)):
     """
     Obtiene un tipo de producto por su ID.
     """
@@ -64,7 +74,7 @@ async def obtener_tipo_producto(tipo_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{tipo_id}", response_model=TipoProductoResponse)
 async def actualizar_tipo_producto(
-    tipo_id: int, tipo_data: TipoProductoUpdate, db: Session = Depends(get_db)
+    tipo_id: str, tipo_data: TipoProductoUpdate, db: Session = Depends(get_db)
 ):
     """
     Actualiza un tipo de producto existente.
@@ -83,7 +93,7 @@ async def actualizar_tipo_producto(
 
 
 @router.delete("/{tipo_id}", status_code=status.HTTP_200_OK)
-async def eliminar_tipo_producto(tipo_id: int, db: Session = Depends(get_db)):
+async def eliminar_tipo_producto(tipo_id: str, db: Session = Depends(get_db)):
     """
     Elimina un tipo de producto por su ID.
     """

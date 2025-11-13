@@ -46,7 +46,7 @@ async def obtener_productos(
 
 
 @router.get("/{producto_id}", response_model=ProductoResponse)
-async def obtener_producto(producto_id: int, db: Session = Depends(get_db)):
+async def obtener_producto(producto_id: str, db: Session = Depends(get_db)):
     """
     Obtiene un producto por su ID.
     """
@@ -71,7 +71,7 @@ async def buscar_productos_por_nombre(nombre: str, db: Session = Depends(get_db)
 
 @router.put("/{producto_id}", response_model=ProductoResponse)
 async def actualizar_producto(
-    producto_id: int, producto_data: ProductoUpdate, db: Session = Depends(get_db)
+    producto_id: str, producto_data: ProductoUpdate, db: Session = Depends(get_db)
 ):
     """
     Actualiza un producto existente.
@@ -96,7 +96,7 @@ async def actualizar_producto(
 
 
 @router.delete("/{producto_id}", status_code=status.HTTP_200_OK)
-async def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
+async def eliminar_producto(producto_id: str, db: Session = Depends(get_db)):
     """
     Elimina un producto por su ID.
     """
