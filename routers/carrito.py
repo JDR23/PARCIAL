@@ -6,11 +6,25 @@ from typing import List
 
 from crud.crud_carrito import CarritoCRUD
 from database.config import get_db
-from entities.carrito import CarritoCreate, CarritoResponse
+from schemas import CarritoCreate, CarritoResponse
+from models.carrito import Carrito
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/carrito", tags=["Carrito"])
+
+
+@router.get("/", response_model=List[CarritoResponse])
+async def obtener_todos_los_carritos(
+    skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+):
+    """
+    Obtiene una lista de todos los items del carrito.
+    """
+    carrito_crud = CarritoCRUD(db)
+    from models.carrito import Carrito
+    items = db.query(Carrito).offset(skip).limit(limit).all()
+    return items
 
 
 @router.post("/", response_model=CarritoResponse, status_code=status.HTTP_201_CREATED)
@@ -23,11 +37,7 @@ async def agregar_producto_al_carrito(
     try:
         carrito_crud = CarritoCRUD(db)
         # Aquí podrías añadir validaciones, como verificar si el producto y el cliente existen.
-        nuevo_item = carrito_crud.agregar_al_carrito(
-            id_producto=item.id_producto,
-            id_cliente=item.id_cliente,
-            id_cliente_creacion=item.id_cliente_creacion,
-        )
+        nuevo_item = carrito_crud.agregar_al_carrito(item)
         return nuevo_item
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -45,7 +55,7 @@ async def obtener_carrito_del_cliente(id_cliente: str, db: Session = Depends(get
     """
     try:
         carrito_crud = CarritoCRUD(db)
-        items_carrito = carrito_crud.obtener_carrito_por_cliente(id_cliente)
+        items_carrito = carrito_crud.obtener_carrito_por_usuario(id_cliente)
         return items_carrito
     except HTTPException:
         raise
@@ -57,7 +67,7 @@ async def obtener_carrito_del_cliente(id_cliente: str, db: Session = Depends(get
 
 
 @router.delete("/item/{id_carrito}", status_code=status.HTTP_200_OK)
-async def eliminar_item_del_carrito(id_carrito: int, db: Session = Depends(get_db)):
+async def eliminar_item_del_carrito(id_carrito: str, db: Session = Depends(get_db)):
     """
     Elimina un item específico del carrito.
     """
@@ -95,7 +105,7 @@ async def vaciar_carrito(id_cliente: str, db: Session = Depends(get_db)):
     """
     try:
         carrito_crud = CarritoCRUD(db)
-        num_eliminados = carrito_crud.vaciar_carrito_cliente(id_cliente)
+        num_eliminados = carrito_crud.vaciar_carrito_usuario(id_cliente)
         return {
             "mensaje": f"Carrito vaciado exitosamente. Se eliminaron {num_eliminados} items."
         }

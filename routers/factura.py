@@ -3,15 +3,26 @@ API de Facturas - Endpoints para gestión de facturas
 """
 
 from typing import List
-from uuid import UUID
 
 from crud.crud_factura import FacturaCRUD
 from database.config import get_db
-from entities.factura import FacturaCreate, FacturaResponse
+from schemas import FacturaCreate, FacturaResponse
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/facturas", tags=["Facturas"])
+
+
+@router.get("/", response_model=List[FacturaResponse])
+async def obtener_facturas(
+    skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+):
+    """
+    Obtiene una lista de todas las facturas.
+    """
+    factura_crud = FacturaCRUD(db)
+    facturas = factura_crud.obtener_facturas(skip=skip, limit=limit)
+    return facturas
 
 
 @router.post("/", response_model=FacturaResponse, status_code=status.HTTP_201_CREATED)
@@ -42,7 +53,7 @@ async def crear_factura(factura_data: FacturaCreate, db: Session = Depends(get_d
 
 
 @router.get("/{factura_id}", response_model=FacturaResponse)
-async def obtener_factura(factura_id: int, db: Session = Depends(get_db)):
+async def obtener_factura(factura_id: str, db: Session = Depends(get_db)):
     """
     Obtiene una factura por su ID.
     """
@@ -57,13 +68,13 @@ async def obtener_factura(factura_id: int, db: Session = Depends(get_db)):
 
 @router.get("/cliente/{cliente_id}", response_model=List[FacturaResponse])
 async def obtener_facturas_del_cliente(
-    cliente_id: UUID, db: Session = Depends(get_db)
+    cliente_id: str, db: Session = Depends(get_db)
 ):
     """
     Obtiene todas las facturas de un cliente específico.
     """
     factura_crud = FacturaCRUD(db)
-    facturas = factura_crud.obtener_facturas_por_cliente(str(cliente_id))
+    facturas = factura_crud.obtener_facturas_por_cliente(cliente_id)
     if not facturas:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

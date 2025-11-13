@@ -1,71 +1,68 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import date
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+from database import Base, engine
+from routers import usuario_router, cliente, producto, tipo_producto, carrito, factura
+import uuid
 
-app = FastAPI(title="API de Usuarios")
+# Crear las tablas de la base de datos
+Base.metadata.create_all(bind=engine)
 
+app = FastAPI(
+    title="API Tienda Online",
+    description="API REST para gestión de tienda online",
+    version="1.0.0"
+)
 
-# --- MODELO DE DATOS ---
-class Usuario(BaseModel):
-    id: int
-    nombre: str
-    apellido: str
-    rol: str
-    fecha_nacimiento: date
+# Configurar CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, especifica los orígenes permitidos
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Montar carpeta frontend como estática
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
-# --- "BASE DE DATOS" EN MEMORIA ---
-usuarios = []
-
-# --- ENDPOINTS CRUD ---
-
-
-@app.get("/")
-def home():
-    return {"mensaje": "Bienvenido a la API de Usuarios"}
-
-
-# Crear un usuario
-@app.post("/usuarios/", response_model=Usuario)
-def crear_usuario(usuario: Usuario):
-    for u in usuarios:
-        if u.id == usuario.id:
-            raise HTTPException(status_code=400, detail="El ID ya existe.")
-    usuarios.append(usuario)
-    return usuario
-
-
-# Listar todos los usuarios
-@app.get("/usuarios/", response_model=List[Usuario])
-def listar_usuarios():
-    return usuarios
+# Incluir routers
+app.include_router(usuario_router.router)
+app.include_router(cliente.router)
+app.include_router(producto.router)
+app.include_router(tipo_producto.router)
+app.include_router(carrito.router)
+app.include_router(factura.router)
 
 
-# Obtener un usuario por su ID
-@app.get("/usuarios/{usuario_id}", response_model=Usuario)
-def obtener_usuario(usuario_id: int):
-    for usuario in usuarios:
-        if usuario.id == usuario_id:
-            return usuario
-    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+# Crear usuario admin por defecto si no existe ninguno
+@app.on_event("startup")
+async def crear_admin_inicial():
+    from database.config import SessionLocal
+    from models.usuario import Usuario
+    db = SessionLocal()
+    try:
+        # Verificar si ya existe algún usuario
+        usuarios_existentes = db.query(Usuario).count()
+        if usuarios_existentes == 0:
+            # Crear admin inicial
+            admin_inicial = Usuario(
+                id=str(uuid.uuid4()),
+                nombre="Administrador",
+                correo="admin@tienda.com",
+                contrasena="admin123",
+                rol="admin"
+            )
+            db.add(admin_inicial)
+            db.commit()
+            print("[INFO] Usuario administrador inicial creado: admin@tienda.com / admin123")
+    except Exception as e:
+        print(f"[ERROR] Error al crear admin inicial: {e}")
+    finally:
+        db.close()
 
-
-# Actualizar un usuario
-@app.put("/usuarios/{usuario_id}", response_model=Usuario)
-def actualizar_usuario(usuario_id: int, usuario_actualizado: Usuario):
-    for i, usuario in enumerate(usuarios):
-        if usuario.id == usuario_id:
-            usuarios[i] = usuario_actualizado
-            return usuario_actualizado
-    raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-
-# Eliminar un usuario
-@app.delete("/usuarios/{usuario_id}")
-def eliminar_usuario(usuario_id: int):
-    for i, usuario in enumerate(usuarios):
-        if usuario.id == usuario_id:
-            usuarios.pop(i)
-            return {"mensaje": f"Usuario con ID {usuario_id} eliminado correctamente"}
-    raise HTTPException(status_code=404, detail="Usuario no encontrado")
+# Ruta raíz - servir el frontend
+@app.get("/", include_in_schema=False)
+def root():
+    return FileResponse("frontend/index.html")
